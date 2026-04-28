@@ -106,7 +106,7 @@ const SCREENS = {
 };
 
 export default function App() {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState('demo');
   const [route, setRoute] = useState('accounts');
 
   if (!user) return <Login onSignIn={setUser} />;
