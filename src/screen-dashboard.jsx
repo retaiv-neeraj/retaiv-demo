@@ -1095,7 +1095,7 @@ const DashboardScreen = ({ accounts: accountsProp, isCustomData: isCustomDataPro
         />
 
         {/* KPI strip — values computed from current accounts state */}
-        <div style={{ display: 'flex', borderBottom: `1px solid ${T.border}`, background: T.surface }}>
+        <div style={{ display: 'flex', borderBottom: `1px solid ${T.border}`, background: T.surface, overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
           <Stat
             label="Net revenue retention"
             value={kpi?.nrr ?? '108.4'} unit="%"
@@ -1149,8 +1149,9 @@ const DashboardScreen = ({ accounts: accountsProp, isCustomData: isCustomDataPro
 
         {/* Filter row */}
         <div style={{
-          padding: '14px 28px', display: 'flex', alignItems: 'center', gap: 10,
+          padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 8,
           borderBottom: `1px solid ${T.border}`, background: T.surface,
+          overflowX: 'auto', WebkitOverflowScrolling: 'touch',
         }}>
           <FilterChip label="Owner" value="All (6)" />
           <FilterChip label="Segment" value="Enterprise" active />
@@ -1167,6 +1168,7 @@ const DashboardScreen = ({ accounts: accountsProp, isCustomData: isCustomDataPro
           <table style={{
             width: '100%', borderCollapse: 'collapse',
             fontFamily: T.sans, fontSize: T.fs.body,
+            minWidth: 700,
           }}>
             <thead>
               <tr style={{

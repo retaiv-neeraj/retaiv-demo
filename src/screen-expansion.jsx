@@ -32,7 +32,7 @@ const ExpansionScreen = () => (
         </div>}
       />
 
-      <div style={{ display: 'flex', borderBottom: `1px solid ${T.border}`, background: T.surfaceAlt }}>
+      <div style={{ display: 'flex', borderBottom: `1px solid ${T.border}`, background: T.surfaceAlt, overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
         <Stat label="Open opportunities" value="47" delta="+12" deltaTone="good" hint="past 30d" />
         <Stat label="Pipeline value" value="$2.81" unit="M" delta="+$412k" deltaTone="good" sparkData={[2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.78,2.81]} />
         <Stat label="Avg deal size" value="$59.8" unit="k" delta="+$4.1k" deltaTone="good" />
@@ -54,7 +54,7 @@ const ExpansionScreen = () => (
       </div>
 
       {/* Stage Kanban */}
-      <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', background: T.surfaceAlt, padding: 14, gap: 10 }}>
+      <div style={{ flex: 1, minHeight: 0, overflow: 'auto', WebkitOverflowScrolling: 'touch', display: 'flex', background: T.surfaceAlt, padding: 14, gap: 10 }}>
         {[
           { stage: 'Discovery',       count: 14, sum: 642, tone: 'info' },
           { stage: 'Qualifying',      count: 18, sum: 864, tone: 'warn' },
@@ -67,7 +67,7 @@ const ExpansionScreen = () => (
           const all = [...items];
           return (
             <div key={ci} style={{
-              flex: 1, minWidth: 0, background: T.surface,
+              flex: 1, minWidth: 160, flexShrink: 0, background: T.surface,
               border: `1px solid ${T.border}`, borderRadius: 6,
               display: 'flex', flexDirection: 'column', overflow: 'hidden',
             }}>

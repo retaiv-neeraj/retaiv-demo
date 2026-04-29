@@ -1,7 +1,7 @@
 import React from 'react';
 import { T } from './tokens.js';
 import { Pill, Dot } from './ui.jsx';
-import { Shell, Card, Btn, NavContext } from './shell.jsx';
+import { Shell, Card, Btn, NavContext, useIsMobile } from './shell.jsx';
 
 // ── Live clock (updates every minute) ─────────────────────────────────────────
 const useClock = () => {
@@ -279,6 +279,7 @@ const WorklistRow = ({ row, onClick }) => {
 const HomeScreen = ({ accounts = [] }) => {
   const { navigate } = React.useContext(NavContext);
   const clock = useClock();
+  const isMobile = useIsMobile();
 
   // Portfolio health — computed live from accounts; falls back to demo portfolio
   // numbers when the sample data (10 rows) is loaded, since it represents 412 real accounts
@@ -302,10 +303,10 @@ const HomeScreen = ({ accounts = [] }) => {
 
         {/* ── Header ─────────────────────────────────────────────────────── */}
         <div style={{
-          padding: '22px 28px',
+          padding: isMobile ? '14px 16px' : '22px 28px',
           borderBottom: `1px solid ${T.border}`,
           background: T.surface,
-          display: 'flex', alignItems: 'flex-start', gap: 24,
+          display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: 'flex-start', gap: isMobile ? 12 : 24,
           flexShrink: 0,
         }}>
           {/* Left: greeting + status */}
@@ -325,15 +326,13 @@ const HomeScreen = ({ accounts = [] }) => {
             }}>
               <span>Overnight:</span>
               <Pill tone="risk">4 accounts moved to red</Pill>
-              <span style={{ color: T.ink4 }}>·</span>
               <Pill tone="warn">7 watch-list signals</Pill>
-              <span style={{ color: T.ink4 }}>·</span>
               <Pill tone="good">2 expansion triggers</Pill>
             </div>
           </div>
 
-          {/* Right: sync status + actions */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 10, flexShrink: 0 }}>
+          {/* Right: sync status + actions — hidden on mobile (PageHead handles actions) */}
+          {!isMobile && <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 10, flexShrink: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: T.fs.small, color: T.ink3 }}>
               <Dot tone="good" size={6} />
               <span>Synced 2m ago</span>
@@ -342,15 +341,15 @@ const HomeScreen = ({ accounts = [] }) => {
               <Btn tone="ghost" size="sm">Refresh signals</Btn>
               <Btn tone="primary" size="sm">Start daily review →</Btn>
             </div>
-          </div>
+          </div>}
         </div>
 
         {/* ── Overnight changes strip ─────────────────────────────────────── */}
         <div style={{
-          padding: '12px 28px',
+          padding: isMobile ? '10px 16px' : '12px 28px',
           borderBottom: `1px solid ${T.border}`,
           background: T.surfaceAlt,
-          display: 'flex', gap: 12, overflowX: 'auto', flexShrink: 0,
+          display: 'flex', gap: 12, overflowX: 'auto', WebkitOverflowScrolling: 'touch', flexShrink: 0,
         }}>
           {OVERNIGHT.map((card, i) => <OvernightCard key={i} card={card} />)}
         </div>
@@ -358,10 +357,10 @@ const HomeScreen = ({ accounts = [] }) => {
         {/* ── Two-column body ─────────────────────────────────────────────── */}
         <div style={{
           flex: 1, minHeight: 0,
-          display: 'flex', gap: 16,
-          padding: '16px 28px',
+          display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 16,
+          padding: isMobile ? '12px 12px' : '16px 28px',
           background: T.surfaceAlt,
-          overflow: 'hidden',
+          overflow: isMobile ? 'auto' : 'hidden',
         }}>
 
           {/* ── LEFT: Worklist ───────────────────────────────────────────── */}
@@ -371,7 +370,7 @@ const HomeScreen = ({ accounts = [] }) => {
               subtitle="9 items · ranked by impact × confidence · est. 2h 40m to clear"
               style={{ height: '100%' }}
             >
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: T.sans, fontSize: T.fs.body }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: T.sans, fontSize: T.fs.body, minWidth: 580 }}>
                 <thead>
                   <tr style={{ borderBottom: `1px solid ${T.border}`, background: T.surface }}>
                     {['#', 'Account', 'Action', 'Impact', 'Confidence', 'Due'].map((h, i) => (

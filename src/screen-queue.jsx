@@ -1,7 +1,7 @@
 import React from 'react';
 import { T } from './tokens.js';
 import { Pill, Dot, ScoreBar, Icon } from './ui.jsx';
-import { Shell, PageHead, Btn, Tabs, Stat } from './shell.jsx';
+import { Shell, PageHead, Btn, Tabs, Stat, useIsMobile } from './shell.jsx';
 
 // Screen 3: Daily Priority Queue — the ranked worklist
 
@@ -310,7 +310,7 @@ const PriorityQueueScreen = () => {
         />
 
         {/* Day summary strip */}
-        <div style={{ display: 'flex', borderBottom: `1px solid ${T.border}`, background: T.surfaceAlt }}>
+        <div style={{ display: 'flex', borderBottom: `1px solid ${T.border}`, background: T.surfaceAlt, overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
           <Stat label="Items for me" value="9" unit="of 23" hint="2 overdue" deltaTone="risk" delta="3 new" />
           <Stat label="ARR at risk" value="$532" unit="k" deltaTone="risk" delta="−$84k" hint="7 accounts" />
           <Stat label="Expansion in flight" value="$218" unit="k" deltaTone="good" delta="+$44k" hint="5 accounts" />
@@ -351,72 +351,137 @@ const PriorityQueueScreen = () => {
   );
 };
 
-const QueueCard = ({ q }) => (
-  <div style={{
-    background: T.surface, border: `1px solid ${T.border}`, borderRadius: 6,
-    marginBottom: 8, display: 'flex', overflow: 'hidden',
-    borderLeft: `3px solid ${q.tone === 'risk' ? T.risk : q.tone === 'warn' ? T.warn : q.tone === 'accent' ? T.accent : T.info}`,
-  }}>
-    {/* rank + priority */}
-    <div style={{ width: 64, padding: '14px 10px', borderRight: `1px solid ${T.borderSubtle}`, textAlign: 'center', background: T.surfaceAlt }}>
-      <div style={{ fontFamily: T.mono, fontSize: 20, fontWeight: 500, color: T.ink, letterSpacing: '-0.03em' }}>{q.rank}</div>
-      <Pill tone={q.tone}>{q.priority}</Pill>
-    </div>
+const toneColor = (tone) =>
+  tone === 'risk' ? T.risk : tone === 'warn' ? T.warn : tone === 'accent' ? T.accent : T.info;
 
-    {/* account + body */}
-    <div style={{ flex: 1, padding: '12px 16px', minWidth: 0 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 6 }}>
-        <div style={{ width: 20, height: 20, borderRadius: 4, background: q.logoC, color: '#fff', fontSize: 9, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{q.logo}</div>
-        <span style={{ fontSize: 13, fontWeight: 600, letterSpacing: '-0.005em' }}>{q.account}</span>
-        <span style={{ fontSize: 11, color: T.ink3, fontFamily: T.mono }}>{'$' + (q.arr/1000).toFixed(0) + 'k ARR'}</span>
-        <span style={{ flex: 1 }} />
-        <Pill tone="neutral">Playbook: {q.playbook}</Pill>
-        <Pill tone={q.status === 'in_progress' ? 'info' : 'neutral'}>
-          <Dot tone={q.status === 'in_progress' ? 'info' : 'neutral'} size={5} />
-          {q.status === 'in_progress' ? 'In progress' : 'New'}
-        </Pill>
-      </div>
-      <div style={{ fontSize: 13, color: T.ink, lineHeight: 1.5, marginBottom: 6 }}>{q.headline}</div>
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-        {q.why.map((w, i) => (
-          <span key={i} style={{
-            fontSize: 10.5, color: T.ink2, padding: '2px 7px',
-            background: T.surfaceSunken, border: `1px solid ${T.border}`, borderRadius: 3,
-          }}>{w}</span>
-        ))}
-      </div>
-    </div>
+const QueueCard = ({ q }) => {
+  const isMobile = useIsMobile();
 
-    {/* impact */}
-    <div style={{ width: 160, padding: '12px 14px', borderLeft: `1px solid ${T.borderSubtle}`, background: T.surfaceAlt }}>
-      <div style={{ fontSize: 10, color: T.ink3, letterSpacing: '0.04em', textTransform: 'uppercase', fontWeight: 500, marginBottom: 4 }}>
-        {q.tone === 'accent' || (q.priority === 'P1' && q.impact > 0 && q.tone !== 'warn' && q.tone !== 'risk') ? 'Expansion' : 'ARR at stake'}
-      </div>
-      <div style={{ fontFamily: T.mono, fontSize: 16, fontWeight: 500, letterSpacing: '-0.02em', color: q.tone === 'accent' || q.tone === 'info' ? T.good : T.risk }}>
-        {q.impact ? '$' + (q.impact/1000).toFixed(0) + 'k' : '—'}
-      </div>
-      <div style={{ fontSize: 10.5, color: T.ink3, marginTop: 8 }}>Confidence</div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
-        <ScoreBar value={q.confidence} tone={q.confidence > 80 ? 'good' : 'warn'} width={70} height={4} />
-        <span style={{ fontFamily: T.mono, fontSize: 11, color: T.ink2 }}>{q.confidence}%</span>
-      </div>
-    </div>
+  if (isMobile) {
+    return (
+      <div style={{
+        background: T.surface, border: `1px solid ${T.border}`, borderRadius: 6,
+        marginBottom: 8, overflow: 'hidden',
+        borderLeft: `3px solid ${toneColor(q.tone)}`,
+      }}>
+        {/* Header row: rank · priority · logo · name · ARR */}
+        <div style={{ padding: '11px 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontFamily: T.mono, fontSize: 15, fontWeight: 500, color: T.ink, minWidth: 20 }}>{q.rank}</span>
+          <Pill tone={q.tone}>{q.priority}</Pill>
+          <div style={{ width: 20, height: 20, borderRadius: 4, background: q.logoC, color: '#fff', fontSize: 9, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{q.logo}</div>
+          <span style={{ fontSize: 13, fontWeight: 600, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.account}</span>
+          <span style={{ fontSize: 11, color: T.ink3, fontFamily: T.mono, flexShrink: 0 }}>${(q.arr/1000).toFixed(0)}k</span>
+        </div>
 
-    {/* Actions */}
-    <div style={{ width: 210, padding: '12px 14px', borderLeft: `1px solid ${T.borderSubtle}`, display: 'flex', flexDirection: 'column', gap: 6 }}>
-      <div style={{ fontSize: 10, color: T.ink3, letterSpacing: '0.04em', textTransform: 'uppercase', fontWeight: 500 }}>Next action</div>
-      <div style={{ fontSize: 12, color: T.ink, fontWeight: 500, lineHeight: 1.35 }}>{q.action}</div>
-      <div style={{ fontSize: 10.5, color: T.ink3, display: 'flex', gap: 8 }}>
-        <span>Due {q.due}</span>·<span>{q.owner}</span>
+        {/* Headline */}
+        <div style={{ padding: '0 14px 10px', fontSize: 13, color: T.ink, lineHeight: 1.5 }}>{q.headline}</div>
+
+        {/* Signal tags */}
+        <div style={{ padding: '0 14px 10px', display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+          {q.why.map((w, i) => (
+            <span key={i} style={{ fontSize: 10.5, color: T.ink2, padding: '2px 7px', background: T.surfaceSunken, border: `1px solid ${T.border}`, borderRadius: 3 }}>{w}</span>
+          ))}
+        </div>
+
+        {/* Stats row */}
+        <div style={{ padding: '8px 14px', borderTop: `1px solid ${T.borderSubtle}`, background: T.surfaceAlt, display: 'flex', alignItems: 'center', gap: 20 }}>
+          <div>
+            <div style={{ fontSize: 10, color: T.ink3, textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 500 }}>
+              {q.tone === 'accent' || q.tone === 'info' ? 'Expansion' : 'ARR at stake'}
+            </div>
+            <div style={{ fontFamily: T.mono, fontSize: 14, fontWeight: 500, color: q.tone === 'accent' || q.tone === 'info' ? T.good : T.risk, marginTop: 2 }}>
+              {q.impact ? '$' + (q.impact/1000).toFixed(0) + 'k' : '—'}
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: 10, color: T.ink3, textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 500 }}>Confidence</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
+              <ScoreBar value={q.confidence} tone={q.confidence > 80 ? 'good' : 'warn'} width={60} height={4} />
+              <span style={{ fontFamily: T.mono, fontSize: 11, color: T.ink2 }}>{q.confidence}%</span>
+            </div>
+          </div>
+          <span style={{ flex: 1 }} />
+          <Pill tone="neutral">{q.playbook}</Pill>
+        </div>
+
+        {/* Action + buttons */}
+        <div style={{ padding: '10px 14px', borderTop: `1px solid ${T.borderSubtle}`, display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 12, fontWeight: 500, color: T.ink, lineHeight: 1.35 }}>{q.action}</div>
+            <div style={{ fontSize: 10.5, color: T.ink3, marginTop: 3 }}>Due {q.due} · {q.owner}</div>
+          </div>
+          <Btn tone="primary" size="sm" icon="mail">Draft</Btn>
+          <Btn size="sm" icon="check">Done</Btn>
+        </div>
       </div>
-      <div style={{ flex: 1 }} />
-      <div style={{ display: 'flex', gap: 4 }}>
-        <Btn tone="primary" size="sm" icon="mail">Draft</Btn>
-        <Btn size="sm" icon="check">Done</Btn>
-        <Btn tone="subtle" size="sm" icon="dots" />
+    );
+  }
+
+  // Desktop layout — unchanged
+  return (
+    <div style={{
+      background: T.surface, border: `1px solid ${T.border}`, borderRadius: 6,
+      marginBottom: 8, display: 'flex', overflow: 'hidden',
+      borderLeft: `3px solid ${toneColor(q.tone)}`,
+    }}>
+      {/* rank + priority */}
+      <div style={{ width: 64, padding: '14px 10px', borderRight: `1px solid ${T.borderSubtle}`, textAlign: 'center', background: T.surfaceAlt }}>
+        <div style={{ fontFamily: T.mono, fontSize: 20, fontWeight: 500, color: T.ink, letterSpacing: '-0.03em' }}>{q.rank}</div>
+        <Pill tone={q.tone}>{q.priority}</Pill>
+      </div>
+
+      {/* account + body */}
+      <div style={{ flex: 1, padding: '12px 16px', minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 6 }}>
+          <div style={{ width: 20, height: 20, borderRadius: 4, background: q.logoC, color: '#fff', fontSize: 9, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{q.logo}</div>
+          <span style={{ fontSize: 13, fontWeight: 600, letterSpacing: '-0.005em' }}>{q.account}</span>
+          <span style={{ fontSize: 11, color: T.ink3, fontFamily: T.mono }}>{'$' + (q.arr/1000).toFixed(0) + 'k ARR'}</span>
+          <span style={{ flex: 1 }} />
+          <Pill tone="neutral">Playbook: {q.playbook}</Pill>
+          <Pill tone={q.status === 'in_progress' ? 'info' : 'neutral'}>
+            <Dot tone={q.status === 'in_progress' ? 'info' : 'neutral'} size={5} />
+            {q.status === 'in_progress' ? 'In progress' : 'New'}
+          </Pill>
+        </div>
+        <div style={{ fontSize: 13, color: T.ink, lineHeight: 1.5, marginBottom: 6 }}>{q.headline}</div>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {q.why.map((w, i) => (
+            <span key={i} style={{ fontSize: 10.5, color: T.ink2, padding: '2px 7px', background: T.surfaceSunken, border: `1px solid ${T.border}`, borderRadius: 3 }}>{w}</span>
+          ))}
+        </div>
+      </div>
+
+      {/* impact */}
+      <div style={{ width: 160, padding: '12px 14px', borderLeft: `1px solid ${T.borderSubtle}`, background: T.surfaceAlt }}>
+        <div style={{ fontSize: 10, color: T.ink3, letterSpacing: '0.04em', textTransform: 'uppercase', fontWeight: 500, marginBottom: 4 }}>
+          {q.tone === 'accent' || (q.priority === 'P1' && q.impact > 0 && q.tone !== 'warn' && q.tone !== 'risk') ? 'Expansion' : 'ARR at stake'}
+        </div>
+        <div style={{ fontFamily: T.mono, fontSize: 16, fontWeight: 500, letterSpacing: '-0.02em', color: q.tone === 'accent' || q.tone === 'info' ? T.good : T.risk }}>
+          {q.impact ? '$' + (q.impact/1000).toFixed(0) + 'k' : '—'}
+        </div>
+        <div style={{ fontSize: 10.5, color: T.ink3, marginTop: 8 }}>Confidence</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
+          <ScoreBar value={q.confidence} tone={q.confidence > 80 ? 'good' : 'warn'} width={70} height={4} />
+          <span style={{ fontFamily: T.mono, fontSize: 11, color: T.ink2 }}>{q.confidence}%</span>
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div style={{ width: 210, padding: '12px 14px', borderLeft: `1px solid ${T.borderSubtle}`, display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <div style={{ fontSize: 10, color: T.ink3, letterSpacing: '0.04em', textTransform: 'uppercase', fontWeight: 500 }}>Next action</div>
+        <div style={{ fontSize: 12, color: T.ink, fontWeight: 500, lineHeight: 1.35 }}>{q.action}</div>
+        <div style={{ fontSize: 10.5, color: T.ink3, display: 'flex', gap: 8 }}>
+          <span>Due {q.due}</span>·<span>{q.owner}</span>
+        </div>
+        <div style={{ flex: 1 }} />
+        <div style={{ display: 'flex', gap: 4 }}>
+          <Btn tone="primary" size="sm" icon="mail">Draft</Btn>
+          <Btn size="sm" icon="check">Done</Btn>
+          <Btn tone="subtle" size="sm" icon="dots" />
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 export { PriorityQueueScreen };

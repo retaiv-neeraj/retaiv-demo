@@ -5,42 +5,72 @@ import { Dot, Spark, RetaivMark, Kbd, Icon } from './ui.jsx';
 const NavContext = React.createContext({ navigate: () => {} });
 export { NavContext };
 
-
 // Retaiv v2 app chrome — more breathing room, tighter hierarchy
 
-const TopBar = ({ breadcrumb }) => (
+// Detects viewport < 1024px, updates on resize
+const useIsMobile = () => {
+  const [mobile, setMobile] = React.useState(() =>
+    typeof window !== 'undefined' && window.matchMedia('(max-width: 1023px)').matches
+  );
+  React.useEffect(() => {
+    const mq = window.matchMedia('(max-width: 1023px)');
+    const handler = e => setMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+  return mobile;
+};
+
+const TopBar = ({ breadcrumb, isMobile, onMenuClick }) => (
   <div style={{
     height: 48, background: T.surface, borderBottom: `1px solid ${T.border}`,
     display: 'flex', alignItems: 'stretch', fontFamily: T.sans, flexShrink: 0,
   }}>
     <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 16, padding: '0 16px', minWidth: 0 }}>
-      <div style={{
-        height: 30, width: 320, flexShrink: 0,
-        display: 'flex', alignItems: 'center', gap: 8,
-        padding: '0 12px', borderRadius: 6,
-        border: `1px solid ${T.border}`, background: T.surfaceAlt,
-      }}>
-        <Icon name="search" size={13} color={T.ink3} />
-        <span style={{ flex: 1, fontSize: T.fs.body, color: T.ink3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Search accounts, contacts…</span>
-        <Kbd>⌘K</Kbd>
-      </div>
-      <div style={{ flex: 1 }} />
-      {breadcrumb && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: T.fs.body, color: T.ink3, whiteSpace: 'nowrap', overflow: 'hidden' }}>
-          {breadcrumb.map((b, i) => (
-            <React.Fragment key={i}>
-              {i > 0 && <span style={{ color: T.ink4 }}>/</span>}
-              <span style={{ color: i === breadcrumb.length - 1 ? T.ink : T.ink3 }}>{b}</span>
-            </React.Fragment>
-          ))}
-        </div>
+      {isMobile ? (
+        <button
+          onClick={onMenuClick}
+          style={{
+            width: 32, height: 32, border: 'none', background: 'transparent',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: T.ink, borderRadius: 5, flexShrink: 0,
+          }}
+        >
+          <Icon name="list" size={18} />
+        </button>
+      ) : (
+        <>
+          <div style={{
+            height: 30, width: 320, flexShrink: 0,
+            display: 'flex', alignItems: 'center', gap: 8,
+            padding: '0 12px', borderRadius: 6,
+            border: `1px solid ${T.border}`, background: T.surfaceAlt,
+          }}>
+            <Icon name="search" size={13} color={T.ink3} />
+            <span style={{ flex: 1, fontSize: T.fs.body, color: T.ink3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              Search accounts, contacts…
+            </span>
+            <Kbd>⌘K</Kbd>
+          </div>
+          <div style={{ flex: 1 }} />
+          {breadcrumb && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: T.fs.body, color: T.ink3, whiteSpace: 'nowrap', overflow: 'hidden' }}>
+              {breadcrumb.map((b, i) => (
+                <React.Fragment key={i}>
+                  {i > 0 && <span style={{ color: T.ink4 }}>/</span>}
+                  <span style={{ color: i === breadcrumb.length - 1 ? T.ink : T.ink3 }}>{b}</span>
+                </React.Fragment>
+              ))}
+            </div>
+          )}
+        </>
       )}
     </div>
     <div style={{ display: 'flex', alignItems: 'center', gap: 2, padding: '0 12px' }}>
-      <ChromeBtn icon="refresh" />
-      <ChromeBtn icon="bell" badge />
-      <ChromeBtn icon="settings" />
-      <div style={{ width: 1, background: T.border, margin: '10px 8px' }} />
+      {!isMobile && <ChromeBtn icon="refresh" />}
+      {!isMobile && <ChromeBtn icon="bell" badge />}
+      {!isMobile && <ChromeBtn icon="settings" />}
+      {!isMobile && <div style={{ width: 1, background: T.border, margin: '10px 8px' }} />}
       <div style={{
         width: 28, height: 28, borderRadius: '50%',
         background: '#2c5e8a', color: '#fff',
@@ -65,7 +95,7 @@ const ChromeBtn = ({ icon, badge }) => (
   </button>
 );
 
-const SideBar = ({ active, onNavigate, playbooks = [], onOpenPlaybook }) => {
+const SideBar = ({ active, onNavigate, playbooks = [], onOpenPlaybook, showClose, onClose }) => {
   const [playbooksOpen, setPlaybooksOpen] = React.useState(true);
   const nav = [
     { group: 'Workspace', items: [
@@ -86,20 +116,33 @@ const SideBar = ({ active, onNavigate, playbooks = [], onOpenPlaybook }) => {
   ];
   return (
     <div style={{
-      width: 224, flexShrink: 0, background: T.surfaceAlt,
+      width: 224, height: '100%', flexShrink: 0, background: T.surfaceAlt,
       borderRight: `1px solid ${T.border}`,
       display: 'flex', flexDirection: 'column', fontFamily: T.sans,
     }}>
       <div style={{
         height: 48, display: 'flex', alignItems: 'center', gap: 10,
-        padding: '0 16px', borderBottom: `1px solid ${T.border}`,
+        padding: '0 16px', borderBottom: `1px solid ${T.border}`, flexShrink: 0,
       }}>
         <RetaivMark size={20} />
         <span style={{ fontSize: T.fs.lead - 2, fontWeight: 600, letterSpacing: '-0.01em' }}>Retaiv</span>
         <span style={{ flex: 1 }} />
-        <span style={{ fontSize: T.fs.micro, color: T.ink3, fontFamily: T.mono }}>v2.4</span>
+        {showClose ? (
+          <button
+            onClick={onClose}
+            style={{
+              width: 28, height: 28, border: 'none', background: 'transparent',
+              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              borderRadius: 5, color: T.ink3,
+            }}
+          >
+            <Icon name="x" size={14} />
+          </button>
+        ) : (
+          <span style={{ fontSize: T.fs.micro, color: T.ink3, fontFamily: T.mono }}>v2.4</span>
+        )}
       </div>
-      <div style={{ padding: '10px 10px', borderBottom: `1px solid ${T.border}` }}>
+      <div style={{ padding: '10px 10px', borderBottom: `1px solid ${T.border}`, flexShrink: 0 }}>
         <div style={{
           display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px',
           borderRadius: 6, background: T.surface, border: `1px solid ${T.border}`,
@@ -129,9 +172,7 @@ const SideBar = ({ active, onNavigate, playbooks = [], onOpenPlaybook }) => {
                 <React.Fragment key={it.id}>
                   <div
                     onClick={() => {
-                      if (it.id === 'playbooks') {
-                        setPlaybooksOpen(v => !v);
-                      }
+                      if (it.id === 'playbooks') setPlaybooksOpen(v => !v);
                       if (onNavigate) onNavigate(it.id);
                     }}
                     style={{
@@ -209,6 +250,7 @@ const SideBar = ({ active, onNavigate, playbooks = [], onOpenPlaybook }) => {
       <div style={{
         padding: '12px 16px', borderTop: `1px solid ${T.border}`,
         fontSize: T.fs.small, color: T.ink3, display: 'flex', alignItems: 'center', gap: 8,
+        flexShrink: 0,
       }}>
         <Dot tone="good" size={6} />
         <span>Signals synced 2m ago</span>
@@ -220,57 +262,119 @@ const SideBar = ({ active, onNavigate, playbooks = [], onOpenPlaybook }) => {
 const Shell = ({ active, breadcrumb, onNavigate, sidebarPlaybooks, onOpenPlaybook, children }) => {
   const ctx = React.useContext(NavContext);
   const nav = onNavigate || ctx.navigate;
+  const isMobile = useIsMobile();
+  const [drawerOpen, setDrawerOpen] = React.useState(false);
+
+  // Close drawer when crossing desktop breakpoint
+  React.useEffect(() => {
+    if (!isMobile) setDrawerOpen(false);
+  }, [isMobile]);
+
+  const handleNav = (id) => {
+    if (isMobile) setDrawerOpen(false);
+    nav(id);
+  };
+
   return (
-  <div style={{
-    display: 'flex', height: '100%', width: '100%',
-    background: T.surface, color: T.ink, fontFamily: T.sans, fontSize: T.fs.body,
-  }}>
-    <SideBar
-      active={active}
-      onNavigate={nav}
-      playbooks={sidebarPlaybooks}
-      onOpenPlaybook={onOpenPlaybook}
-    />
-    <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-      <TopBar breadcrumb={breadcrumb} />
-      <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>{children}</div>
+    <div style={{
+      display: 'flex', height: '100%', width: '100%',
+      background: T.surface, color: T.ink, fontFamily: T.sans, fontSize: T.fs.body,
+      position: 'relative',
+    }}>
+      {/* Mobile backdrop */}
+      {isMobile && drawerOpen && (
+        <div
+          onClick={() => setDrawerOpen(false)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 40,
+            background: 'rgba(20,20,18,0.48)',
+          }}
+        />
+      )}
+
+      {/* Sidebar — static on desktop, sliding drawer on mobile */}
+      {isMobile ? (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 50,
+          transform: drawerOpen ? 'translateX(0)' : 'translateX(-100%)',
+          transition: 'transform 240ms cubic-bezier(0.4, 0, 0.2, 1)',
+        }}>
+          <SideBar
+            active={active}
+            onNavigate={handleNav}
+            playbooks={sidebarPlaybooks}
+            onOpenPlaybook={onOpenPlaybook}
+            showClose
+            onClose={() => setDrawerOpen(false)}
+          />
+        </div>
+      ) : (
+        <SideBar
+          active={active}
+          onNavigate={handleNav}
+          playbooks={sidebarPlaybooks}
+          onOpenPlaybook={onOpenPlaybook}
+        />
+      )}
+
+      {/* Main content area */}
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+        <TopBar
+          breadcrumb={breadcrumb}
+          isMobile={isMobile}
+          onMenuClick={() => setDrawerOpen(v => !v)}
+        />
+        <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>{children}</div>
+      </div>
     </div>
-  </div>
   );
 };
 
 // PageHead — bigger title, more top/bottom padding, no more small sub
-const PageHead = ({ title, eyebrow, subtitle, meta, actions }) => (
-  <div style={{
-    padding: '24px 28px 20px', borderBottom: `1px solid ${T.border}`,
-    display: 'flex', alignItems: 'flex-end', gap: 24, background: T.surface,
-    flexWrap: 'wrap',
-  }}>
-    <div style={{ flex: '1 1 340px', minWidth: 280 }}>
-      {eyebrow && (
+const PageHead = ({ title, eyebrow, subtitle, meta, actions }) => {
+  const isMobile = useIsMobile();
+  return (
+    <div style={{
+      padding: isMobile ? '14px 16px 12px' : '24px 28px 20px',
+      borderBottom: `1px solid ${T.border}`,
+      display: 'flex', alignItems: 'flex-end', gap: isMobile ? 12 : 24,
+      background: T.surface,
+      flexWrap: 'wrap',
+    }}>
+      <div style={{ flex: '1 1 240px', minWidth: 0 }}>
+        {eyebrow && (
+          <div style={{
+            fontSize: T.fs.micro, color: T.ink3, letterSpacing: '0.08em',
+            textTransform: 'uppercase', fontWeight: 600, marginBottom: 6,
+          }}>{eyebrow}</div>
+        )}
         <div style={{
-          fontSize: T.fs.micro, color: T.ink3, letterSpacing: '0.08em',
-          textTransform: 'uppercase', fontWeight: 600, marginBottom: 6,
-        }}>{eyebrow}</div>
+          fontSize: isMobile ? T.fs.lead : T.fs.title,
+          fontWeight: 600, letterSpacing: '-0.02em',
+          color: T.ink, lineHeight: 1.1,
+        }}>{title}</div>
+        {subtitle && (
+          <div style={{
+            fontSize: T.fs.body, color: T.ink3, marginTop: 6, lineHeight: 1.5,
+          }}>{subtitle}</div>
+        )}
+      </div>
+      {!isMobile && meta && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 18, fontSize: T.fs.small, color: T.ink3 }}>
+          {meta}
+        </div>
       )}
-      <div style={{
-        fontSize: T.fs.title, fontWeight: 600, letterSpacing: '-0.02em',
-        color: T.ink, lineHeight: 1.1,
-      }}>{title}</div>
-      {subtitle && (
+      {actions && (
         <div style={{
-          fontSize: T.fs.body, color: T.ink3, marginTop: 6, lineHeight: 1.5,
-        }}>{subtitle}</div>
+          display: 'flex', gap: 8, flexWrap: 'wrap',
+          width: isMobile ? '100%' : undefined,
+        }}>
+          {actions}
+        </div>
       )}
     </div>
-    {meta && (
-      <div style={{ display: 'flex', alignItems: 'center', gap: 18, fontSize: T.fs.small, color: T.ink3 }}>
-        {meta}
-      </div>
-    )}
-    {actions && <div style={{ display: 'flex', gap: 8 }}>{actions}</div>}
-  </div>
-);
+  );
+};
 
 const Btn = ({ tone = 'ghost', icon, children, onClick, size = 'md' }) => {
   const [hovered, setHovered] = React.useState(false);
@@ -315,7 +419,8 @@ const Tabs = ({ tabs, active, onChange }) => (
   <div style={{
     display: 'flex', alignItems: 'stretch',
     borderBottom: `1px solid ${T.border}`, background: T.surface,
-    padding: '0 28px',
+    padding: '0 16px',
+    overflowX: 'auto', WebkitOverflowScrolling: 'touch',
   }}>
     {tabs.map((t, i) => {
       const on = i === active;
@@ -328,7 +433,7 @@ const Tabs = ({ tabs, active, onChange }) => (
             color: on ? T.ink : T.ink2, cursor: 'pointer',
             borderBottom: `2px solid ${on ? T.ink : 'transparent'}`,
             marginBottom: -1, display: 'flex', alignItems: 'center', gap: 8,
-            letterSpacing: '-0.005em',
+            letterSpacing: '-0.005em', whiteSpace: 'nowrap', flexShrink: 0,
           }}
         >
           {t.label}
@@ -412,4 +517,4 @@ const Section = ({ children, pad = true, bg = T.surface }) => (
   }}>{children}</div>
 );
 
-export { TopBar, SideBar, Shell, PageHead, Btn, Tabs, Stat, Card, ChromeBtn, Section };
+export { TopBar, SideBar, Shell, PageHead, Btn, Tabs, Stat, Card, ChromeBtn, Section, useIsMobile };
