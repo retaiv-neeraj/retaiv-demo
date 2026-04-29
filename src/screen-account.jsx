@@ -39,10 +39,10 @@ const PLAYBOOK_STEPS = [
   { t: '4. Loop in Product',             s: 'Share roadmap for SSO reliability (shipped Apr 22)', done: true },
 ];
 
-const AccountDetailScreen = () => {
+const AccountDetailScreen = ({ account }) => {
   const { navigate } = React.useContext(NavContext);
   return (
-    <Shell active="accounts" breadcrumb={['Accounts', 'At risk', 'Dayframe Media']}>
+    <Shell active="accounts" breadcrumb={['Accounts', 'At risk', account?.name ?? 'Dayframe Media']}>
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
         {/* Account header */}
         <div style={{
@@ -64,13 +64,13 @@ const AccountDetailScreen = () => {
             ← Accounts
           </button>
           <div style={{
-            width: 44, height: 44, borderRadius: 8, background: '#d8482e',
+            width: 44, height: 44, borderRadius: 8, background: account?.logoC ?? '#d8482e',
             color: '#fff', fontWeight: 700, fontSize: 16,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>DM</div>
+          }}>{account?.logo ?? 'DM'}</div>
           <div style={{ flex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ fontSize: 19, fontWeight: 600, letterSpacing: '-0.02em' }}>Dayframe Media</span>
+              <span style={{ fontSize: 19, fontWeight: 600, letterSpacing: '-0.02em' }}>{account?.name ?? 'Dayframe Media'}</span>
               <Pill tone="risk"><Dot tone="risk" size={5} />At risk</Pill>
               <Pill tone="neutral">Enterprise · Annual</Pill>
               <Pill tone="neutral">Renewal in 47 days</Pill>

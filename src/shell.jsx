@@ -65,7 +65,8 @@ const ChromeBtn = ({ icon, badge }) => (
   </button>
 );
 
-const SideBar = ({ active, onNavigate }) => {
+const SideBar = ({ active, onNavigate, playbooks = [], onOpenPlaybook }) => {
+  const [playbooksOpen, setPlaybooksOpen] = React.useState(true);
   const nav = [
     { group: 'Workspace', items: [
       { id: 'home', label: 'Home', icon: 'home' },
@@ -78,7 +79,7 @@ const SideBar = ({ active, onNavigate }) => {
       { id: 'health', label: 'Health trends', icon: 'chart' },
     ]},
     { group: 'Execution', items: [
-      { id: 'playbooks', label: 'Playbooks', icon: 'zap' },
+      { id: 'playbooks', label: 'Playbooks', icon: 'list' },
       { id: 'templates', label: 'Templates', icon: 'mail' },
       { id: 'integrations', label: 'Integrations', icon: 'link' },
     ]},
@@ -125,20 +126,81 @@ const SideBar = ({ active, onNavigate }) => {
             {g.items.map(it => {
               const on = active === it.id;
               return (
-                <div key={it.id} onClick={() => onNavigate && onNavigate(it.id)} style={{
-                  display: 'flex', alignItems: 'center', gap: 10,
-                  padding: '7px 12px', margin: '1px 4px', borderRadius: 5,
-                  background: on ? T.surface : 'transparent',
-                  boxShadow: on ? `inset 0 0 0 1px ${T.border}` : 'none',
-                  color: on ? T.ink : T.ink2, cursor: 'pointer',
-                  fontSize: T.fs.body, fontWeight: on ? 500 : 400,
-                }}>
-                  <Icon name={it.icon} size={14} color={on ? T.ink : T.ink3} />
-                  <span style={{ flex: 1 }}>{it.label}</span>
-                  {it.badge && (
-                    <span style={{ fontSize: T.fs.micro, color: T.ink3, fontFamily: T.mono }}>{it.badge}</span>
+                <React.Fragment key={it.id}>
+                  <div
+                    onClick={() => {
+                      if (it.id === 'playbooks') {
+                        setPlaybooksOpen(v => !v);
+                      }
+                      if (onNavigate) onNavigate(it.id);
+                    }}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 10,
+                      padding: '7px 12px', margin: '1px 4px', borderRadius: 5,
+                      background: on ? T.surface : 'transparent',
+                      boxShadow: on ? `inset 0 0 0 1px ${T.border}` : 'none',
+                      color: on ? T.ink : T.ink2, cursor: 'pointer',
+                      fontSize: T.fs.body, fontWeight: on ? 500 : 400,
+                    }}
+                  >
+                    <Icon name={it.icon} size={14} color={on ? T.ink : T.ink3} />
+                    <span style={{ flex: 1 }}>{it.label}</span>
+                    {it.id === 'playbooks' && (
+                      <span style={{ fontSize: T.fs.micro, color: T.ink3, fontFamily: T.mono }}>
+                        {playbooks.length}
+                      </span>
+                    )}
+                    {it.badge && (
+                      <span style={{ fontSize: T.fs.micro, color: T.ink3, fontFamily: T.mono }}>{it.badge}</span>
+                    )}
+                    {it.id === 'playbooks' && (
+                      <Icon name="chevronDown" size={11} color={T.ink3} />
+                    )}
+                  </div>
+                  {it.id === 'playbooks' && playbooksOpen && (
+                    <div style={{ margin: '2px 4px 6px 24px' }}>
+                      {playbooks.length === 0 ? (
+                        <div style={{
+                          fontSize: T.fs.small, color: T.ink4,
+                          padding: '8px 10px', borderRadius: 5,
+                          background: T.surface, border: `1px solid ${T.borderSubtle}`,
+                        }}>
+                          No playbooks yet
+                        </div>
+                      ) : (
+                        playbooks.map(pb => (
+                          <div
+                            key={pb.id}
+                            onClick={() => onOpenPlaybook && onOpenPlaybook(pb)}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: 8,
+                              padding: '8px 10px', marginBottom: 4, borderRadius: 5,
+                              background: T.surface, border: `1px solid ${T.borderSubtle}`,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            <Icon name="list" size={12} color={T.ink3} />
+                            <div style={{ minWidth: 0, flex: 1 }}>
+                              <div style={{
+                                fontSize: T.fs.small, color: T.ink, fontWeight: 500,
+                                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                              }}>
+                                {pb.name}
+                              </div>
+                              <div style={{
+                                fontSize: T.fs.micro, color: T.ink3,
+                                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                                marginTop: 1,
+                              }}>
+                                {pb.trigger}
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
                   )}
-                </div>
+                </React.Fragment>
               );
             })}
           </div>
@@ -155,7 +217,7 @@ const SideBar = ({ active, onNavigate }) => {
   );
 };
 
-const Shell = ({ active, breadcrumb, onNavigate, children }) => {
+const Shell = ({ active, breadcrumb, onNavigate, sidebarPlaybooks, onOpenPlaybook, children }) => {
   const ctx = React.useContext(NavContext);
   const nav = onNavigate || ctx.navigate;
   return (
@@ -163,7 +225,12 @@ const Shell = ({ active, breadcrumb, onNavigate, children }) => {
     display: 'flex', height: '100%', width: '100%',
     background: T.surface, color: T.ink, fontFamily: T.sans, fontSize: T.fs.body,
   }}>
-    <SideBar active={active} onNavigate={nav} />
+    <SideBar
+      active={active}
+      onNavigate={nav}
+      playbooks={sidebarPlaybooks}
+      onOpenPlaybook={onOpenPlaybook}
+    />
     <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
       <TopBar breadcrumb={breadcrumb} />
       <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>{children}</div>
@@ -206,6 +273,7 @@ const PageHead = ({ title, eyebrow, subtitle, meta, actions }) => (
 );
 
 const Btn = ({ tone = 'ghost', icon, children, onClick, size = 'md' }) => {
+  const [hovered, setHovered] = React.useState(false);
   const pad = size === 'sm' ? '5px 10px' : '7px 14px';
   const fs = size === 'sm' ? T.fs.body - 1 : T.fs.body;
   const styles = {
@@ -214,21 +282,36 @@ const Btn = ({ tone = 'ghost', icon, children, onClick, size = 'md' }) => {
     ghost:   { bg: T.surface, fg: T.ink, bd: T.border },
     subtle:  { bg: 'transparent', fg: T.ink2, bd: 'transparent' },
   };
+  const shadows = {
+    primary: '0 4px 12px rgba(26,26,24,0.28)',
+    accent:  '0 4px 12px rgba(216,72,46,0.30)',
+    ghost:   '0 4px 10px rgba(26,26,24,0.10)',
+    subtle:  '0 2px 8px rgba(26,26,24,0.08)',
+  };
   const s = styles[tone];
   return (
-    <button onClick={onClick} style={{
-      display: 'inline-flex', alignItems: 'center', gap: 7,
-      padding: pad, borderRadius: 6, cursor: 'pointer',
-      background: s.bg, color: s.fg, border: `1px solid ${s.bd}`,
-      fontFamily: T.sans, fontSize: fs, fontWeight: 500, letterSpacing: '-0.005em',
-    }}>
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        display: 'inline-flex', alignItems: 'center', gap: 7,
+        padding: pad, borderRadius: 6, cursor: 'pointer',
+        background: s.bg, color: s.fg, border: `1px solid ${s.bd}`,
+        fontFamily: T.sans, fontSize: fs, fontWeight: 500, letterSpacing: '-0.005em',
+        transition: 'transform 150ms ease, box-shadow 150ms ease, opacity 150ms ease',
+        transform: hovered ? 'scale(1.03)' : 'scale(1)',
+        boxShadow: hovered ? shadows[tone] : 'none',
+        opacity: hovered && tone === 'subtle' ? 0.75 : 1,
+      }}
+    >
       {icon && <Icon name={icon} size={13} />}
       {children}
     </button>
   );
 };
 
-const Tabs = ({ tabs, active }) => (
+const Tabs = ({ tabs, active, onChange }) => (
   <div style={{
     display: 'flex', alignItems: 'stretch',
     borderBottom: `1px solid ${T.border}`, background: T.surface,
@@ -237,13 +320,17 @@ const Tabs = ({ tabs, active }) => (
     {tabs.map((t, i) => {
       const on = i === active;
       return (
-        <div key={i} style={{
-          padding: '12px 16px', fontSize: T.fs.body, fontWeight: on ? 600 : 400,
-          color: on ? T.ink : T.ink2, cursor: 'pointer',
-          borderBottom: `2px solid ${on ? T.ink : 'transparent'}`,
-          marginBottom: -1, display: 'flex', alignItems: 'center', gap: 8,
-          letterSpacing: '-0.005em',
-        }}>
+        <div
+          key={i}
+          onClick={() => onChange && onChange(i)}
+          style={{
+            padding: '12px 16px', fontSize: T.fs.body, fontWeight: on ? 600 : 400,
+            color: on ? T.ink : T.ink2, cursor: 'pointer',
+            borderBottom: `2px solid ${on ? T.ink : 'transparent'}`,
+            marginBottom: -1, display: 'flex', alignItems: 'center', gap: 8,
+            letterSpacing: '-0.005em',
+          }}
+        >
           {t.label}
           {t.count != null && (
             <span style={{ fontSize: T.fs.small, color: on ? T.ink2 : T.ink3, fontFamily: T.mono }}>

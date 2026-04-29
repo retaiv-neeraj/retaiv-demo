@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { T } from './tokens.js';
 import { RetaivMark } from './ui.jsx';
 import { NavContext } from './shell.jsx';
-import { DashboardScreen } from './screen-dashboard.jsx';
+import { HomeScreen } from './screen-home.jsx';
+import { DashboardScreen, SAMPLE_DATA } from './screen-dashboard.jsx';
 import { AccountDetailScreen } from './screen-account.jsx';
 import { PriorityQueueScreen } from './screen-queue.jsx';
 import { ChurnScreen } from './screen-churn.jsx';
@@ -96,7 +97,7 @@ const SCREENS = {
   churn:     ChurnScreen,
   expansion: ExpansionScreen,
   // Other sidebar items fall back to dashboard for the demo
-  home:      DashboardScreen,
+  home:      HomeScreen,
   health:    DashboardScreen,
   playbooks: DashboardScreen,
   templates: DashboardScreen,
@@ -107,16 +108,36 @@ const SCREENS = {
 
 export default function App() {
   const [user, setUser] = useState('demo');
-  const [route, setRoute] = useState('accounts');
+  const [route, setRoute] = useState('home');
+  const [selectedAccount, setSelectedAccount] = useState(null);
+  const [accountsData, setAccountsData] = useState(SAMPLE_DATA);
+  const [isCustomData, setIsCustomData] = useState(false);
 
   if (!user) return <Login onSignIn={setUser} />;
 
   const Screen = SCREENS[route] || DashboardScreen;
 
   return (
-    <NavContext.Provider value={{ navigate: setRoute }}>
+    <NavContext.Provider value={{
+      navigate: (nextRoute, account) => {
+        setRoute(nextRoute);
+        if (account) setSelectedAccount(account);
+      },
+    }}>
       <div style={{ height: '100vh', width: '100vw', overflow: 'hidden' }}>
-        <Screen />
+        <Screen
+          account={selectedAccount}
+          accounts={accountsData}
+          isCustomData={isCustomData}
+          onAccountsImport={(data) => {
+            setAccountsData(data);
+            setIsCustomData(true);
+          }}
+          onAccountsReset={() => {
+            setAccountsData(SAMPLE_DATA);
+            setIsCustomData(false);
+          }}
+        />
       </div>
     </NavContext.Provider>
   );

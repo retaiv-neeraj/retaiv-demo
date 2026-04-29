@@ -1,6 +1,6 @@
 import React from 'react';
 import { T } from './tokens.js';
-import { Pill, Dot, ScoreBar } from './ui.jsx';
+import { Pill, Dot, ScoreBar, Icon } from './ui.jsx';
 import { Shell, PageHead, Btn, Tabs, Stat } from './shell.jsx';
 
 // Screen 3: Daily Priority Queue — the ranked worklist
@@ -85,60 +85,271 @@ const QUEUE = [
   },
 ];
 
-const PriorityQueueScreen = () => (
-  <Shell active="priority" breadcrumb={['Workspace', 'Priority queue', 'Today']}>
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <PageHead
-        title="Today's priorities"
-        subtitle="Wednesday, April 23 · 23 items · ranked by impact × confidence"
-        meta={<>
-          <span>Owner: <span style={{ color: T.ink2, fontWeight: 500 }}>Me + team</span></span>
-          <span>Auto-refresh: <span style={{ color: T.ink2, fontWeight: 500 }}>hourly</span></span>
-        </>}
-        actions={<div style={{ display: 'flex', gap: 6 }}>
-          <Btn icon="refresh" size="sm">Re-rank</Btn>
-          <Btn icon="settings" size="sm">Rules</Btn>
-          <Btn tone="primary" icon="zap" size="sm">Send daily digest</Btn>
-        </div>}
-      />
+const DigestToast = ({ message }) => (
+  <div style={{
+    position: 'fixed', right: 18, bottom: 18, zIndex: 1100,
+    display: 'inline-flex', alignItems: 'center', gap: 8,
+    background: T.ink, color: '#fff',
+    border: `1px solid ${T.ink2}`, borderRadius: 8,
+    padding: '9px 14px', fontSize: T.fs.small, fontFamily: T.sans,
+    boxShadow: '0 12px 28px rgba(0,0,0,0.35)',
+    letterSpacing: '-0.005em',
+  }}>
+    <Icon name="check" size={13} color="#9ad4a7" />
+    <span>{message}</span>
+  </div>
+);
 
-      {/* Day summary strip */}
-      <div style={{ display: 'flex', borderBottom: `1px solid ${T.border}`, background: T.surfaceAlt }}>
-        <Stat label="Items for me" value="9" unit="of 23" hint="2 overdue" deltaTone="risk" delta="3 new" />
-        <Stat label="ARR at risk" value="$532" unit="k" deltaTone="risk" delta="−$84k" hint="7 accounts" />
-        <Stat label="Expansion in flight" value="$218" unit="k" deltaTone="good" delta="+$44k" hint="5 accounts" />
-        <Stat label="Actions completed · 7d" value="42" delta="+12" deltaTone="good" sparkData={[20,25,30,32,35,38,42]} hint="team" />
-        <Stat label="Save rate · 90d" value="61" unit="%" delta="+6pp" deltaTone="good" sparkData={[50,52,54,55,57,59,61]} hint="vs industry 48%" />
-        <div style={{ width: 220, padding: '12px 16px', background: T.surface }}>
-          <div style={{ fontSize: 10.5, color: T.ink3, letterSpacing: '0.05em', textTransform: 'uppercase', fontWeight: 500, marginBottom: 8 }}>Team capacity</div>
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-            <ScoreBar value={74} tone="warn" width="100%" height={6} />
-            <span style={{ fontFamily: T.mono, fontSize: 12, color: T.warn, minWidth: 36, textAlign: 'right' }}>74%</span>
+const TOP_ACCOUNTS = [
+  { logo: 'DM', logoC: '#d8482e', name: 'Dayframe Media' },
+  { logo: 'FW', logoC: '#d8482e', name: 'Fieldwork.io' },
+  { logo: 'PB', logoC: '#2f7d5b', name: 'Parallel Bio' },
+];
+
+const DigestModal = ({ onClose, onSend }) => {
+  const [visible, setVisible] = React.useState(false);
+
+  React.useEffect(() => {
+    const raf = requestAnimationFrame(() => setVisible(true));
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  const handleClose = () => {
+    setVisible(false);
+    setTimeout(onClose, 180);
+  };
+
+  const previewRows = [
+    {
+      label: "Today's priorities",
+      pill: <Pill tone="neutral">23 items · 9 assigned to me</Pill>,
+    },
+    {
+      label: 'ARR at risk',
+      pill: <Pill tone="risk">$532k · 7 accounts</Pill>,
+    },
+    {
+      label: 'Expansion in flight',
+      pill: <Pill tone="good">$218k · 5 accounts</Pill>,
+    },
+  ];
+
+  return (
+    <div
+      onClick={handleClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 1050,
+        background: 'rgba(20,20,18,0.58)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: 16,
+        opacity: visible ? 1 : 0,
+        transition: 'opacity 180ms ease',
+      }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          width: '100%', maxWidth: 480,
+          background: T.surface,
+          border: `1px solid ${T.border}`,
+          borderRadius: 12,
+          boxShadow: '0 20px 60px rgba(0,0,0,0.30), 0 2px 8px rgba(0,0,0,0.18)',
+          fontFamily: T.sans,
+          transform: visible ? 'translateY(0)' : 'translateY(10px)',
+          opacity: visible ? 1 : 0,
+          transition: 'transform 180ms ease, opacity 180ms ease',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Header */}
+        <div style={{
+          display: 'flex', alignItems: 'flex-start', gap: 10,
+          padding: '18px 20px 14px',
+          borderBottom: `1px solid ${T.border}`,
+        }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: T.fs.lead, fontWeight: 600, color: T.ink, letterSpacing: '-0.015em' }}>
+              Send Daily Digest
+            </div>
+            <div style={{ fontSize: T.fs.small, color: T.ink3, marginTop: 3 }}>
+              A snapshot of today's CS priorities — sent to your team.
+            </div>
           </div>
-          <div style={{ fontSize: 10.5, color: T.ink3, marginTop: 6 }}>A. Chen at 96% · rebalance suggested</div>
+          <button
+            onClick={handleClose}
+            style={{
+              width: 28, height: 28, border: 'none', background: 'transparent',
+              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              borderRadius: 5, color: T.ink3, flexShrink: 0,
+            }}
+          >
+            <Icon name="x" size={14} />
+          </button>
         </div>
-      </div>
 
-      {/* Tabs */}
-      <Tabs active={0} tabs={[
-        { label: 'Ranked', count: 23 },
-        { label: 'By account', count: 18 },
-        { label: 'Snoozed', count: 4 },
-        { label: 'Completed · 7d', count: 42 },
-      ]} />
+        {/* Body */}
+        <div style={{ padding: '16px 20px' }}>
+          <div style={{
+            fontSize: T.fs.micro, textTransform: 'uppercase', letterSpacing: '0.07em',
+            fontWeight: 600, color: T.ink3, marginBottom: 10,
+          }}>
+            Digest preview
+          </div>
 
-      {/* Queue */}
-      <div style={{ flex: 1, minHeight: 0, overflow: 'auto', background: T.surfaceAlt, padding: '10px 14px' }}>
-        {QUEUE.map((q, i) => (
-          <QueueCard key={i} q={q} />
-        ))}
-        <div style={{ textAlign: 'center', fontSize: 11, color: T.ink3, padding: '14px 0' }}>
-          16 more items · <span style={{ color: T.ink2, textDecoration: 'underline' }}>show all</span>
+          <div style={{
+            background: T.surfaceAlt,
+            border: `1px solid ${T.border}`,
+            borderRadius: 8,
+            overflow: 'hidden',
+          }}>
+            {previewRows.map((row, i) => (
+              <div
+                key={i}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '10px 14px',
+                  borderBottom: i < previewRows.length - 1 ? `1px solid ${T.borderSubtle}` : 'none',
+                }}
+              >
+                <span style={{ fontSize: T.fs.body, color: T.ink2 }}>{row.label}</span>
+                {row.pill}
+              </div>
+            ))}
+
+            {/* Top 3 accounts row */}
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '10px 14px',
+              borderTop: `1px solid ${T.borderSubtle}`,
+            }}>
+              <span style={{ fontSize: T.fs.body, color: T.ink2 }}>Top 3 focus accounts</span>
+              <div style={{ display: 'flex', gap: 5 }}>
+                {TOP_ACCOUNTS.map(a => (
+                  <div key={a.logo} style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 5,
+                    padding: '2px 7px 2px 4px',
+                    background: T.surface, border: `1px solid ${T.border}`,
+                    borderRadius: 4,
+                  }}>
+                    <div style={{
+                      width: 14, height: 14, borderRadius: 3,
+                      background: a.logoC, color: '#fff',
+                      fontSize: 8, fontWeight: 700,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>{a.logo}</div>
+                    <span style={{ fontSize: 11, color: T.ink2, fontWeight: 500 }}>{a.name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Recipient line */}
+          <div style={{
+            marginTop: 12,
+            display: 'flex', alignItems: 'center', gap: 6,
+            fontSize: T.fs.small, color: T.ink3,
+          }}>
+            <Icon name="mail" size={12} color={T.ink3} />
+            <span>Sending to your CS team · 4 members</span>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div style={{
+          display: 'flex', justifyContent: 'flex-end', gap: 8,
+          padding: '12px 20px 18px',
+          borderTop: `1px solid ${T.border}`,
+        }}>
+          <Btn tone="ghost" size="sm" onClick={handleClose}>Cancel</Btn>
+          <button
+            onClick={onSend}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 7,
+              padding: '5px 14px', borderRadius: 6,
+              background: T.ink, color: '#fff',
+              border: `1px solid ${T.ink}`,
+              fontFamily: T.sans, fontSize: T.fs.body - 1, fontWeight: 500,
+              cursor: 'pointer', letterSpacing: '-0.005em',
+            }}
+          >
+            Send Digest →
+          </button>
         </div>
       </div>
     </div>
-  </Shell>
-);
+  );
+};
+
+const PriorityQueueScreen = () => {
+  const [showDigest, setShowDigest] = React.useState(false);
+  const [toast, setToast] = React.useState('');
+
+  const handleSend = () => {
+    console.log('[Retaiv] Daily digest sent', { items: QUEUE.length, timestamp: new Date().toISOString() });
+    setShowDigest(false);
+    setToast('Daily digest sent successfully to your team!');
+    setTimeout(() => setToast(''), 2800);
+  };
+
+  return (
+    <Shell active="priority" breadcrumb={['Workspace', 'Priority queue', 'Today']}>
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+        <PageHead
+          title="Today's priorities"
+          subtitle="Wednesday, April 23 · 23 items · ranked by impact × confidence"
+          meta={<>
+            <span>Owner: <span style={{ color: T.ink2, fontWeight: 500 }}>Me + team</span></span>
+            <span>Auto-refresh: <span style={{ color: T.ink2, fontWeight: 500 }}>hourly</span></span>
+          </>}
+          actions={<div style={{ display: 'flex', gap: 6 }}>
+            <Btn icon="refresh" size="sm">Re-rank</Btn>
+            <Btn icon="settings" size="sm">Rules</Btn>
+            <Btn tone="primary" icon="zap" size="sm" onClick={() => setShowDigest(true)}>Send daily digest</Btn>
+          </div>}
+        />
+
+        {/* Day summary strip */}
+        <div style={{ display: 'flex', borderBottom: `1px solid ${T.border}`, background: T.surfaceAlt }}>
+          <Stat label="Items for me" value="9" unit="of 23" hint="2 overdue" deltaTone="risk" delta="3 new" />
+          <Stat label="ARR at risk" value="$532" unit="k" deltaTone="risk" delta="−$84k" hint="7 accounts" />
+          <Stat label="Expansion in flight" value="$218" unit="k" deltaTone="good" delta="+$44k" hint="5 accounts" />
+          <Stat label="Actions completed · 7d" value="42" delta="+12" deltaTone="good" sparkData={[20,25,30,32,35,38,42]} hint="team" />
+          <Stat label="Save rate · 90d" value="61" unit="%" delta="+6pp" deltaTone="good" sparkData={[50,52,54,55,57,59,61]} hint="vs industry 48%" />
+          <div style={{ width: 220, padding: '12px 16px', background: T.surface }}>
+            <div style={{ fontSize: 10.5, color: T.ink3, letterSpacing: '0.05em', textTransform: 'uppercase', fontWeight: 500, marginBottom: 8 }}>Team capacity</div>
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+              <ScoreBar value={74} tone="warn" width="100%" height={6} />
+              <span style={{ fontFamily: T.mono, fontSize: 12, color: T.warn, minWidth: 36, textAlign: 'right' }}>74%</span>
+            </div>
+            <div style={{ fontSize: 10.5, color: T.ink3, marginTop: 6 }}>A. Chen at 96% · rebalance suggested</div>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <Tabs active={0} tabs={[
+          { label: 'Ranked', count: 23 },
+          { label: 'By account', count: 18 },
+          { label: 'Snoozed', count: 4 },
+          { label: 'Completed · 7d', count: 42 },
+        ]} />
+
+        {/* Queue */}
+        <div style={{ flex: 1, minHeight: 0, overflow: 'auto', background: T.surfaceAlt, padding: '10px 14px' }}>
+          {QUEUE.map((q, i) => (
+            <QueueCard key={i} q={q} />
+          ))}
+          <div style={{ textAlign: 'center', fontSize: 11, color: T.ink3, padding: '14px 0' }}>
+            16 more items · <span style={{ color: T.ink2, textDecoration: 'underline' }}>show all</span>
+          </div>
+        </div>
+      </div>
+
+      {showDigest && <DigestModal onClose={() => setShowDigest(false)} onSend={handleSend} />}
+      {toast && <DigestToast message={toast} />}
+    </Shell>
+  );
+};
 
 const QueueCard = ({ q }) => (
   <div style={{
